@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Admin Dashboard - Ream Matrix</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold tracking-wider text-indigo-400">REAM MATRIX // {{ school.name | upper }}</h1>
+            <p class="text-xs text-slate-400">Academic Year: <span class="text-white font-semibold">{{ settings.current_academic_year }}</span> | Term: <span class="text-white font-semibold">{{ settings.current_term }}</span></p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-sm text-slate-400">Admin: <strong class="text-white">{{ current_user.username }}</strong></span>
+            <a href="{{ url_for('auth.logout') }}" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition">Logout</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Flash Messages for Alerts & Notifications -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-6 p-4 rounded-lg text-sm {% if category == 'danger' or category == 'warning' %}bg-red-900/50 border border-red-500 text-red-200{% elif category == 'success' %}bg-emerald-900/50 border border-emerald-500 text-emerald-200{% else %}bg-sky-900/50 border border-sky-500 text-sky-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Configuration & Administrative Control Panels -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- 1. Academic Parameters Control -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                <h3 class="text-sm font-semibold text-white mb-3">Academic Parameters</h3>
+                <form action="{{ url_for('school_admin.update_settings') }}" method="POST" class="space-y-3">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Current Term</label>
+                        <select name="current_term" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded text-sm text-white">
+                            <option value="Term 1" {% if settings.current_term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                            <option value="Term 2" {% if settings.current_term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                            <option value="Term 3" {% if settings.current_term == 'Term 3' %}selected{% endif %}>Term 3</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Academic Year</label>
+                        <input type="text" name="current_academic_year" value="{{ settings.current_academic_year }}" required class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded text-sm text-white">
+                    </div>
+                    <button type="submit" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded">Update Settings</button>
+                </form>
+            </div>
+
+            <!-- 2. Dynamic Form & Stream Creation -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
+                <div>
+                    <h3 class="text-sm font-semibold text-white mb-2">Configure Forms & Streams</h3>
+                    <!-- Form creation form -->
+                    <form action="{{ url_for('school_admin.add_form') }}" method="POST" class="flex space-x-2 mb-2">
+                        <input type="text" name="form_name" placeholder="e.g. Form 4" required class="flex-grow px-3 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white">
+                        <button type="submit" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-xs rounded text-white">Add Form</button>
+                    </form>
+                    <!-- Stream creation form -->
+                    <form action="{{ url_for('school_admin.add_stream') }}" method="POST" class="flex space-x-2">
+                        <input type="text" name="stream_name" placeholder="e.g. West" required class="flex-grow px-3 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white">
+                        <button type="submit" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-xs rounded text-white">Add Stream</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. Bulk Enrollment Utilities & Template Download -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-3">
+                <h3 class="text-sm font-semibold text-white">Bulk Enrollment Utilities</h3>
+                <a href="{{ url_for('school_admin.download_template') }}" class="block w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-center text-xs font-medium rounded text-slate-200">Download CSV Template</a>
+                
+                <form action="{{ url_for('school_admin.bulk_enroll') }}" method="POST" enctype="multipart/form-data" class="space-y-2">
+                    <input type="file" name="bulk_file" accept=".csv" required class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500">
+                    <button type="submit" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded">Bulk Upload CSV</button>
+                </form>
+            </div>
+
+            <!-- 4. Staff User Management Card -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-white mb-1">Staff Management</h3>
+                    <p class="text-xs text-slate-400">Manage teachers and storekeepers accounts.</p>
+                </div>
+                <div class="space-y-2">
+                    <button onclick="openAddStaffModal()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded transition">+ Add Staff User</button>
+                    <a href="{{ url_for('school_admin.manage_staff') }}" class="block w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-center text-xs font-medium rounded text-slate-200 transition">View Staff Directory</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar: Year Filter, Search, Promotion, Cohort Deletion -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+            <!-- Left side: Year Filter & Search Bar -->
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <!-- Academic Year Switcher Dropdown -->
+                <form method="GET" action="{{ url_for('school_admin.dashboard') }}" class="flex items-center space-x-1">
+                    <input type="hidden" name="search" value="{{ search_query }}">
+                    <select name="year" onchange="this.form.submit()" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-indigo-400 font-semibold focus:outline-none focus:border-indigo-500">
+                        {% for yr in available_years %}
+                            <option value="{{ yr }}" {% if selected_year == yr %}selected{% endif %}>Academic Year: {{ yr }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <!-- Search Form -->
+                <form method="GET" action="{{ url_for('school_admin.dashboard') }}" class="flex space-x-2">
+                    <input type="hidden" name="year" value="{{ selected_year }}">
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search Adm No..." class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition">Search</button>
+                    {% if search_query or selected_year != settings.current_academic_year %}
+                        <a href="{{ url_for('school_admin.dashboard') }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded-lg border border-slate-700 flex items-center">Reset</a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <!-- Right side: Action Buttons -->
+            <div class="flex space-x-3">
+                <button onclick="openPromotionModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg transition text-sm">Promote Students</button>
+                <button onclick="openDeleteYearModal()" class="px-4 py-2 bg-red-900/80 hover:bg-red-900 text-white font-medium rounded-lg transition text-sm">Delete by Year</button>
+                <a href="{{ url_for('school_admin.add_student') }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition text-sm">+ Enroll Student</a>
+            </div>
+        </div>
+
+        <!-- Student Registry Table -->
+        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-x-auto shadow-xl">
+            <table class="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                    <tr class="bg-slate-900/50 border-b border-slate-700 text-xs uppercase tracking-wider text-slate-400">
+                        <th class="p-4">Adm No.</th>
+                        <th class="p-4">Full Name</th>
+                        <th class="p-4">Gender</th>
+                        <th class="p-4">Form/Grade</th>
+                        <th class="p-4">Stream</th>
+                        <th class="p-4">Year</th>
+                        <th class="p-4 text-center">Term 1</th>
+                        <th class="p-4 text-center">Term 2</th>
+                        <th class="p-4 text-center">Term 3</th>
+                        <th class="p-4 text-right">Account Owed</th>
+                        <th class="p-4 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700 text-sm">
+                    {% for student in students %}
+                    <tr class="hover:bg-slate-750 transition">
+                        <td class="p-4 font-mono font-medium text-white">{{ student.admission_no }}</td>
+                        <td class="p-4 text-white font-medium">{{ student.full_name }}</td>
+                        <td class="p-4 text-slate-300">{{ student.gender }}</td>
+                        <td class="p-4 text-slate-300">{{ student.form_grade }}</td>
+                        <td class="p-4 text-slate-300">{{ student.stream }}</td>
+                        <td class="p-4 text-slate-300 font-mono">{{ student.academic_year }}</td>
+                        
+                        <!-- Term Statuses (Updated to gracefully handle Submitted, Cleared, or Pending values) -->
+                        <td class="p-4 text-center">
+                            <span class="px-2 py-0.5 text-xs rounded {% if student.term_1_status in ['Cleared', 'Submitted'] %}bg-emerald-900/40 text-emerald-300 border border-emerald-500/30{% elif student.term_1_status == 'Exempted' %}bg-slate-700 text-slate-400{% else %}bg-amber-900/40 text-amber-300 border border-amber-500/30{% endif %}">
+                                {{ student.term_1_status or 'Pending' }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <span class="px-2 py-0.5 text-xs rounded {% if student.term_2_status in ['Cleared', 'Submitted'] %}bg-emerald-900/40 text-emerald-300 border border-emerald-500/30{% elif student.term_2_status == 'Exempted' %}bg-slate-700 text-slate-400{% else %}bg-amber-900/40 text-amber-300 border border-amber-500/30{% endif %}">
+                                {{ student.term_2_status or 'Pending' }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <span class="px-2 py-0.5 text-xs rounded {% if student.term_3_status in ['Cleared', 'Submitted'] %}bg-emerald-900/40 text-emerald-300 border border-emerald-500/30{% elif student.term_3_status == 'Exempted' %}bg-slate-700 text-slate-400{% else %}bg-amber-900/40 text-amber-300 border border-amber-500/30{% endif %}">
+                                {{ student.term_3_status or 'Pending' }}
+                            </span>
+                        </td>
+                        
+                        <!-- Account Owed -->
+                        <td class="p-4 text-right font-mono text-amber-400">{{ student.account_owed }}</td>
+                        
+                        <!-- Inline Edit & Delete Actions -->
+                        <td class="p-4 text-center space-x-2">
+                            <a href="{{ url_for('school_admin.edit_student', student_id=student.id) }}" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition">Edit</a>
+                            <a href="{{ url_for('school_admin.delete_student', student_id=student.id) }}" onclick="return confirm('Delete record for {{ student.full_name }}?');" class="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white text-xs rounded transition">Delete</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="11" class="p-8 text-center text-slate-400">No student records found for academic year <strong class="text-white">{{ selected_year }}</strong>.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Promotion Modal -->
+    <div id="promotionModal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 p-6 rounded-xl max-w-md w-full border border-slate-700 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-2">Promote Students to Next Academic Year</h3>
+            <p class="text-xs text-slate-400 mb-4">This will advance all active student records to the specified upcoming academic year, advance their form/grade, and reset term clearance states.</p>
+            <form action="{{ url_for('school_admin.promote_students') }}" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">New Academic Year</label>
+                    <input type="text" name="next_academic_year" placeholder="e.g. 2027" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-sm text-white">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModals()" class="px-3 py-1.5 bg-slate-700 text-xs rounded text-white">Cancel</button>
+                    <button type="submit" class="px-3 py-1.5 bg-indigo-600 text-xs rounded text-white font-semibold">Confirm Promotion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Year Warning Modal -->
+    <div id="deleteYearModal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 p-6 rounded-xl max-w-md w-full border border-red-500/50 shadow-2xl">
+            <div class="text-red-500 text-2xl font-bold mb-2">⚠️ WARNING ALERT</div>
+            <h3 class="text-lg font-bold text-white mb-1">Bulk Delete Students by Year</h3>
+            <p class="text-xs text-slate-300 mb-4">You are about to permanently delete **all** student records matching an academic year. This action cannot be undone.</p>
+            <form action="{{ url_for('school_admin.delete_by_year') }}" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Enter Target Academic Year to Delete</label>
+                    <input type="text" name="target_year" placeholder="e.g. 2026" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-sm text-white font-mono">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModals()" class="px-3 py-1.5 bg-slate-700 text-xs rounded text-white">Cancel</button>
+                    <button type="submit" onclick="return confirm('FINAL WARNING: Are you completely sure you want to wipe all student records for this year?');" class="px-3 py-1.5 bg-red-600 text-xs rounded text-white font-semibold">Delete Entire Cohort</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Staff User Modal -->
+    <div id="addStaffModal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 p-6 rounded-xl max-w-md w-full border border-slate-700 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-2">Create New Staff Account</h3>
+            <p class="text-xs text-slate-400 mb-4">Register a new staff member for your school.</p>
+            <form action="{{ url_for('school_admin.add_staff') }}" method="POST" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Username</label>
+                    <input type="text" name="username" placeholder="e.g. jdoe" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-sm text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Initial Password</label>
+                    <input type="password" name="password" placeholder="••••••••" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-sm text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Staff Role</label>
+                    <select name="role" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-sm text-white">
+                        <option value="hoi">Head of Institution (HOI)</option>
+                        <option value="ream_collection">Ream Collection Officer</option>
+                        <option value="exam_officer">Examination Officer</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeModals()" class="px-3 py-1.5 bg-slate-700 text-xs rounded text-white">Cancel</button>
+                    <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs rounded text-white font-semibold transition">Save Staff Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Toggle Scripts -->
+    <script>
+        function openPromotionModal() { document.getElementById('promotionModal').classList.remove('hidden'); }
+        function openDeleteYearModal() { document.getElementById('deleteYearModal').classList.remove('hidden'); }
+        function openAddStaffModal() { document.getElementById('addStaffModal').classList.remove('hidden'); }
+        function closeModals() { 
+            document.getElementById('promotionModal').classList.add('hidden'); 
+            document.getElementById('deleteYearModal').classList.add('hidden'); 
+            document.getElementById('addStaffModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

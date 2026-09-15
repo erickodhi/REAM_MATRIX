@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboard School - Ream Matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen py-10">
+    <div class="bg-slate-800 p-8 rounded-xl shadow-2xl w-full max-w-lg border border-slate-700">
+        <div class="mb-6">
+            <a href="{{ url_for('super_admin.dashboard') }}" class="text-indigo-400 hover:underline text-sm font-medium">&larr; Back to Dashboard</a>
+            <h1 class="text-2xl font-bold text-white mt-2">Onboard New School</h1>
+            <p class="text-slate-400 text-sm">Register a school institution and provision its initial administrator credentials.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-3 rounded text-sm bg-red-900/50 border border-red-500 text-red-200">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">School Name</label>
+                <input type="text" name="school_name" placeholder="e.g. Nyandarua High School" required class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">School Code / Prefix</label>
+                <input type="text" name="school_code" placeholder="e.g. NYAN_001" required class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <hr class="border-slate-700 my-2">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">School Admin Username</label>
+                <input type="text" name="admin_username" placeholder="e.g. nyan_admin" required class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">School Admin Temporary Password</label>
+                <input type="password" name="admin_password" placeholder="••••••••" required class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition duration-200 mt-2">
+                Create Institution & Admin
+            </button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Requisition & Disbursement Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    
+    <!-- Navbar -->
+    <nav class="bg-slate-900 border-b border-slate-800 px-8 py-4 flex justify-between items-center shadow-md">
+        <h1 class="text-lg font-black tracking-wider text-indigo-400">EXAM REQUISITION & DISBURSEMENT PORTAL</h1>
+        <div class="flex items-center space-x-4">
+            <span class="text-xs text-slate-400">Officer: <strong class="text-white">{{ current_user.username }}</strong></span>
+            <a href="{{ url_for('auth.logout') }}" class="px-3 py-1 bg-red-600/80 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition">Logout</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        
+        <!-- Flash Notifications -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="p-4 rounded-xl text-xs font-medium border {% if category == 'danger' %}bg-red-950/80 border-red-500 text-red-200{% else %}bg-emerald-950/80 border-emerald-500 text-emerald-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Stock Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Collected</p>
+                <h3 class="text-2xl font-black mt-2 text-white">{{ total_collected }} <span class="text-xs font-normal text-slate-400">Sheets</span></h3>
+            </div>
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Issued</p>
+                <h3 class="text-2xl font-black mt-2 text-amber-400">{{ total_issued }} <span class="text-xs font-normal text-slate-400">Sheets</span></h3>
+            </div>
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Loose Leftovers Pool</p>
+                <h3 class="text-2xl font-black mt-2 text-sky-400">{{ current_loose_leftovers }} <span class="text-xs font-normal text-slate-400">Sheets</span></h3>
+            </div>
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Available Balance</p>
+                <h3 class="text-2xl font-black mt-2 text-emerald-400">{{ available_balance }} <span class="text-xs font-normal text-slate-400">Sheets</span></h3>
+            </div>
+        </div>
+
+        <!-- Main Workspace Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Dynamic Action Panel (Requisition vs Loose Disbursement Switch) -->
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl h-fit space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-bold text-white">
+                        {% if current_loose_leftovers >= 30 %}
+                            <span class="text-amber-400">Loose Pool Threshold Met</span>
+                        {% else %}
+                            Exam Requisition Portal
+                        {% endif %}
+                    </h2>
+                    {% if current_loose_leftovers >= 30 %}
+                        <span class="px-2 py-0.5 bg-amber-950 border border-amber-500/50 text-amber-300 text-[9px] uppercase font-bold rounded-full">Reams Locked</span>
+                    {% endif %}
+                </div>
+
+                <!-- Threshold Alert Notice & Loose Disbursement Button -->
+                {% if current_loose_leftovers >= 30 %}
+                <div class="p-4 rounded-xl bg-amber-950/60 border border-amber-500/60 text-amber-200 text-xs space-y-3">
+                    <p>
+                        <strong>Store Notice:</strong> There are <strong>{{ current_loose_leftovers }} loose leftover sheets</strong> in the pool (≥ 30 threshold). Full ream requisitions are temporarily locked.
+                    </p>
+                    <button type="button" onclick="openLooseModal()" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-amber-600/30 cursor-pointer">
+                        Open Loose Disbursement Form
+                    </button>
+                </div>
+                {% endif %}
+
+                <!-- Main Requisition Button (Automatically inactive when loose sheets >= 30) -->
+                <div class="space-y-4">
+                    <p class="text-xs text-slate-400">Click below to start a new examination paper ream requisition request.</p>
+                    <button type="button" onclick="openRequisitionFormModal()" 
+                        {% if current_loose_leftovers >= 30 %}disabled{% endif %}
+                        class="w-full py-3.5 {% if current_loose_leftovers >= 30 %}bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-50{% else %}bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 cursor-pointer{% endif %} font-bold text-xs uppercase tracking-wider rounded-xl transition">
+                        {% if current_loose_leftovers >= 30 %}Ream Requisitions Locked{% else %}+ New Ream Requisition{% endif %}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Requisition & Disbursement Audit Log Table -->
+            <div class="lg:col-span-2 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl h-fit">
+                <div class="p-6 border-b border-slate-800">
+                    <h2 class="text-base font-bold text-white">Requisition & Disbursement Audit Log</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-950/50 border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-400">
+                                <th class="p-4">Details</th>
+                                <th class="p-4">Request Specs</th>
+                                <th class="p-4">Store Allocation</th>
+                                <th class="p-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-xs">
+                            {% for req in requisitions %}
+                            <tr class="hover:bg-slate-850 transition">
+                                <td class="p-4">
+                                    <div class="font-bold text-white">{{ req.department_subject }} ({{ req.form_grade }})</div>
+                                    <div class="text-slate-400 text-[10px]">{{ req.purpose }} • By {{ req.teacher_name }}</div>
+                                </td>
+                                <td class="p-4 text-slate-300">
+                                    {% if req.is_loose_disbursement %}
+                                        <span class="px-2 py-0.5 bg-amber-950/60 text-amber-300 border border-amber-500/40 rounded text-[9px] font-bold uppercase">Loose Disbursement</span>
+                                        <div class="mt-1 font-mono text-white">{{ req.total_sheets_required }} sheets</div>
+                                    {% else %}
+                                        <div>{{ req.num_students }} students × {{ req.sheets_per_student }} sheets</div>
+                                        <div class="text-[10px] text-amber-400">+{{ req.padding_sheets }} padding = <strong>{{ req.total_sheets_required }} total</strong></div>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4 text-slate-300 font-mono">
+                                    {% if req.is_loose_disbursement %}
+                                        <span class="text-slate-500 italic">Direct Pool Draw</span>
+                                    {% else %}
+                                        <div><strong class="text-indigo-400">{{ req.full_reams_to_issue }} Reams</strong></div>
+                                        <div class="text-[10px] text-sky-400">{{ req.leftover_loose_sheets }} leftover loose</div>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="px-2.5 py-1 bg-emerald-950 border border-emerald-500/50 text-emerald-300 font-bold uppercase rounded text-[10px]">{{ req.status }}</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="p-8 text-center text-slate-500 italic">No audit records found yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal 1: Requisition Input Form -->
+    <div id="reqFormModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <h3 class="text-base font-bold text-white flex justify-between items-center">
+                <span>New Exam Requisition Form</span>
+                <button type="button" onclick="closeRequisitionFormModal()" class="text-slate-400 hover:text-white">&times;</button>
+            </h3>
+            
+            <form id="initialReqForm" onsubmit="event.preventDefault(); triggerVerification();" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Department / Subject Name</label>
+                    <input type="text" id="dept_sub" placeholder="e.g., Mathematics" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Teacher Name</label>
+                    <input type="text" id="t_name" placeholder="e.g., Mr. Eric" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Purpose / Exam Name</label>
+                    <input type="text" id="purp" placeholder="e.g., Mid-Term Assessment" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Form / Grade</label>
+                    <input type="text" id="f_grade" placeholder="e.g., Form 3" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Number of Students</label>
+                        <input type="number" id="n_students" min="1" placeholder="100" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Sheets per Student</label>
+                        <input type="number" id="s_student" min="1" placeholder="2" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeRequisitionFormModal()" class="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-indigo-600/30 cursor-pointer">Proceed to Verify</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Beautiful Verification Popup (Includes 100 padding & approximate reams) -->
+    <div id="verificationModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6">
+            <h3 class="text-base font-bold text-white flex justify-between items-center">
+                <span>Verify Requisition & Store Allocation</span>
+                <span class="text-[10px] bg-indigo-950 text-indigo-400 border border-indigo-500/40 px-2.5 py-0.5 rounded-full uppercase font-bold">Store Check</span>
+            </h3>
+
+            <div class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Exam Print Calculation:</span>
+                    <span id="vCalc" class="font-mono text-white">0 students × 0 sheets</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Printer Buffer Padding:</span>
+                    <span class="font-mono text-amber-400">+100 Sheets</span>
+                </div>
+                <div class="border-t border-slate-800 pt-2 flex justify-between font-bold">
+                    <span class="text-slate-300">Total Net Sheets Required:</span>
+                    <span id="vTotal" class="font-mono text-white">0</span>
+                </div>
+                <div class="border-t border-slate-800 pt-2 flex justify-between font-bold">
+                    <span class="text-indigo-300">Approx. Reams to Collect:</span>
+                    <span id="vReams" class="font-mono text-indigo-400 text-sm">0 Reams</span>
+                </div>
+                <div class="flex justify-between font-bold">
+                    <span class="text-sky-300">Automatic Leftover Loose Pool:</span>
+                    <span id="vLoose" class="font-mono text-sky-400">0 Sheets</span>
+                </div>
+            </div>
+
+            <!-- Hidden Form submitted to backend upon approval -->
+            <form id="finalSubmitForm" action="{{ url_for('exam.dashboard') }}" method="POST">
+                <input type="hidden" name="action_type" value="ream_requisition">
+                <input type="hidden" name="department_subject" id="f_dept">
+                <input type="hidden" name="teacher_name" id="f_teacher">
+                <input type="hidden" name="purpose" id="f_purpose">
+                <input type="hidden" name="form_grade" id="f_form">
+                <input type="hidden" name="num_students" id="f_students">
+                <input type="hidden" name="sheets_per_student" id="f_sps">
+
+                <div class="flex space-x-3">
+                    <button type="button" onclick="backToForm()" class="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Back</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-600/30 cursor-pointer">Verified / Approved</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Loose Sheet Disbursement Popup Form -->
+    <div id="looseDisburseModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <h3 class="text-base font-bold text-white flex justify-between items-center">
+                <span>Disburse Loose Sheets Form</span>
+                <span class="text-[10px] bg-amber-950 text-amber-400 border border-amber-500/40 px-2.5 py-0.5 rounded-full uppercase font-bold">Pool: {{ current_loose_leftovers }} Available</span>
+            </h3>
+            
+            <form action="{{ url_for('exam.disburse_loose') }}" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Department / Subject Name</label>
+                    <input type="text" name="department_subject" placeholder="e.g., English" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Teacher Name</label>
+                    <input type="text" name="teacher_name" placeholder="e.g., Madam Grace" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Purpose / Assessment</label>
+                    <input type="text" name="purpose" placeholder="e.g., Short Quiz" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Form / Grade</label>
+                    <input type="text" name="form_grade" placeholder="e.g., Form 2" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Sheets to Disburse (Max: {{ current_loose_leftovers }})</label>
+                    <input type="number" name="sheets_requested" min="1" max="{{ current_loose_leftovers }}" placeholder="e.g., 40" required class="w-full bg-slate-950 border border-slate-800 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeLooseModal()" class="w-1/2 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-amber-600/30 cursor-pointer">Confirm Disbursement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Controls -->
+    <script>
+        function openRequisitionFormModal() {
+            document.getElementById('reqFormModal').classList.remove('hidden');
+            document.getElementById('reqFormModal').classList.add('flex');
+        }
+
+        function closeRequisitionFormModal() {
+            document.getElementById('reqFormModal').classList.remove('flex');
+            document.getElementById('reqFormModal').classList.add('hidden');
+        }
+
+        function triggerVerification() {
+            const dept = document.getElementById('dept_sub').value;
+            const teacher = document.getElementById('t_name').value;
+            const purpose = document.getElementById('purp').value;
+            const grade = document.getElementById('f_grade').value;
+            const students = parseInt(document.getElementById('n_students').value) || 0;
+            const sps = parseInt(document.getElementById('s_student').value) || 0;
+
+            const examSheets = students * sps;
+            const padding = 100;
+            const totalReq = examSheets + padding;
+            const reams = Math.ceil(totalReq / 500);
+            const leftovers = (reams * 500) - totalReq;
+
+            // Populate Verification Popup
+            document.getElementById('vCalc').innerText = `${students} students × ${sps} sheets (${examSheets})`;
+            document.getElementById('vTotal').innerText = `${totalReq} Sheets`;
+            document.getElementById('vReams').innerText = `${reams} Ream(s) (${reams * 500} sheets)`;
+            document.getElementById('vLoose').innerText = `${leftovers} Sheets`;
+
+            // Populate Hidden Final Form
+            document.getElementById('f_dept').value = dept;
+            document.getElementById('f_teacher').value = teacher;
+            document.getElementById('f_purpose').value = purpose;
+            document.getElementById('f_form').value = grade;
+            document.getElementById('f_students').value = students;
+            document.getElementById('f_sps').value = sps;
+
+            closeRequisitionFormModal();
+            document.getElementById('verificationModal').classList.remove('hidden');
+            document.getElementById('verificationModal').classList.add('flex');
+        }
+
+        function backToForm() {
+            document.getElementById('verificationModal').classList.remove('flex');
+            document.getElementById('verificationModal').classList.add('hidden');
+            openRequisitionFormModal();
+        }
+
+        function openLooseModal() {
+            document.getElementById('looseDisburseModal').classList.remove('hidden');
+            document.getElementById('looseDisburseModal').classList.add('flex');
+        }
+
+        function closeLooseModal() {
+            document.getElementById('looseDisburseModal').classList.remove('flex');
+            document.getElementById('looseDisburseModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ream Collection Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 text-white font-black px-3 py-1.5 rounded-lg text-sm tracking-wider">REAM MATRIX</div>
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-semibold">Collection Officer Portal</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-sm text-slate-300">Active Collection: <strong class="text-emerald-400">Term {{ active_term }}</strong></span>
+            <span class="text-slate-600">|</span>
+            <span class="text-sm text-slate-300">Logged in as <strong class="text-white">{{ current_user.username }}</strong></span>
+            <a href="{{ url_for('auth.logout') }}" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white text-xs font-semibold rounded-lg transition">Logout</a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for category, message in messages %}
+                        <div class="p-3 rounded-lg text-xs font-medium {% if category == 'success' %}bg-emerald-950/80 border border-emerald-800 text-emerald-300{% elif category == 'warning' %}bg-amber-950/80 border border-amber-800 text-amber-300{% else %}bg-rose-950/80 border border-rose-800 text-rose-300{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-tight">Student Ream Records</h1>
+                <p class="text-xs text-slate-400 mt-1">Recording physical collections for <strong class="text-indigo-300">Term {{ active_term }}</strong> (Managed by School Admin).</p>
+            </div>
+            
+            <form method="GET" action="{{ url_for('ream_collection.dashboard') }}" class="flex w-full md:w-auto gap-2">
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name or Adm No..." class="px-4 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 w-full md:w-72 shadow-inner">
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition shadow-lg shadow-indigo-600/20">Search</button>
+                {% if search_query %}
+                    <a href="{{ url_for('ream_collection.dashboard') }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl transition flex items-center">Reset</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                            <th class="py-4 px-5">Adm No</th>
+                            <th class="py-4 px-5">Full Name</th>
+                            <th class="py-4 px-5">Form / Grade</th>
+                            <th class="py-4 px-5">Stream</th>
+                            <th class="py-4 px-5 text-center">Term 1</th>
+                            <th class="py-4 px-5 text-center">Term 2</th>
+                            <th class="py-4 px-5 text-center">Term 3</th>
+                            <th class="py-4 px-5 text-center">Action (Term {{ active_term }})</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 text-xs">
+                        {% for student in students %}
+                            <tr class="hover:bg-slate-800/40 transition">
+                                <td class="py-4 px-5 font-mono text-indigo-400 font-semibold">{{ student.admission_no }}</td>
+                                <td class="py-4 px-5 font-medium text-white">{{ student.full_name }}</td>
+                                <td class="py-4 px-5 text-slate-300">{{ student.form_grade }}</td>
+                                <td class="py-4 px-5 text-slate-300">{{ student.stream }}</td>
+                                
+                                <!-- Term 1 Status -->
+                                <td class="py-4 px-5 text-center">
+                                    {% set t1 = student.term_1_status|lower %}
+                                    {% if t1 == 'submitted' %}
+                                        <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-emerald-500/40">Submitted</span>
+                                    {% elif t1 == 'exempted' %}
+                                        <span class="px-2.5 py-1 bg-slate-800 text-slate-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-slate-700">Exempted</span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-amber-500/30">Pending</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Term 2 Status -->
+                                <td class="py-4 px-5 text-center">
+                                    {% set t2 = student.term_2_status|lower %}
+                                    {% if t2 == 'submitted' %}
+                                        <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-emerald-500/40">Submitted</span>
+                                    {% elif t2 == 'exempted' %}
+                                        <span class="px-2.5 py-1 bg-slate-800 text-slate-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-slate-700">Exempted</span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-amber-500/30">Pending</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Term 3 Status -->
+                                <td class="py-4 px-5 text-center">
+                                    {% set t3 = student.term_3_status|lower %}
+                                    {% if t3 == 'submitted' %}
+                                        <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-emerald-500/40">Submitted</span>
+                                    {% elif t3 == 'exempted' %}
+                                        <span class="px-2.5 py-1 bg-slate-800 text-slate-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-slate-700">Exempted</span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-amber-500/30">Pending</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Dynamic Action Column -->
+                                <td class="py-4 px-5 text-center">
+                                    {% set current_status = (student.term_1_status if active_term == 1 else (student.term_2_status if active_term == 2 else student.term_3_status))|lower %}
+                                    
+                                    <div class="flex items-center justify-center">
+                                        {% if current_status == 'submitted' %}
+                                            <form action="{{ url_for('ream_collection.update_status', student_id=student.id) }}?page={{ pagination.page }}&search={{ search_query }}&term={{ active_term }}" method="POST">
+                                                <input type="hidden" name="action" value="undo">
+                                                <button type="submit" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white text-[10px] font-bold rounded transition border border-rose-500/20">Undo T{{ active_term }}</button>
+                                            </form>
+                                        {% elif current_status == 'exempted' %}
+                                            <span class="px-2.5 py-1 bg-slate-800 text-slate-500 text-[10px] font-bold uppercase rounded border border-slate-700/50">Exempted</span>
+                                        {% else %}
+                                            <form action="{{ url_for('ream_collection.update_status', student_id=student.id) }}?page={{ pagination.page }}&search={{ search_query }}&term={{ active_term }}" method="POST">
+                                                <input type="hidden" name="action" value="submit">
+                                                <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded transition shadow-sm">Submit T{{ active_term }}</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="py-12 text-center text-slate-500 italic">No students found matching your criteria.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-slate-950/40 px-6 py-4 border-t border-slate-800 flex justify-between items-center">
+                <span class="text-xs text-slate-400">
+                    Showing page <strong class="text-white">{{ pagination.page }}</strong> of <strong class="text-white">{{ pagination.pages }}</strong> (Total Students: {{ pagination.total }})
+                </span>
+                
+                <div class="flex space-x-2">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('ream_collection.dashboard', page=pagination.prev_num, search=search_query) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition">Previous</a>
+                    {% else %}
+                        <span class="px-3 py-1.5 bg-slate-900 text-slate-600 text-xs font-semibold rounded-lg cursor-not-allowed">Previous</span>
+                    {% endif %}
+
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('ream_collection.dashboard', page=pagination.next_num, search=search_query) }}" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow-md shadow-indigo-600/20">Next</a>
+                    {% else %}
+                        <span class="px-3 py-1.5 bg-slate-900 text-slate-600 text-xs font-semibold registered text-xs font-semibold rounded-lg cursor-not-allowed">Next</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

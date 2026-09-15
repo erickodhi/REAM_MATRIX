@@ -1,0 +1,100 @@
+{% extends "hoi/base.html" %}
+{% block title %}Form & Stream Analysis - Ream Matrix{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+    <div class="flex justify-between items-center bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+        <div>
+            <h1 class="text-2xl font-black text-white tracking-tight">Form & Stream Analysis</h1>
+            <p class="text-xs text-slate-400 mt-1">Granular breakdown of ream collections across grades and streams for {{ selected_term }}.</p>
+        </div>
+        <form method="GET">
+            <select name="term" onchange="this.form.submit()" class="bg-slate-950 border border-slate-700 text-xs text-white px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
+                <option value="Term 1" {% if selected_term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                <option value="Term 2" {% if selected_term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                <option value="Term 3" {% if selected_term == 'Term 3' %}selected{% endif %}>Term 3</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Form / Grade Analysis Section -->
+    <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden p-6">
+        <h2 class="text-lg font-black text-white mb-4">Form / Grade Breakdown</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase">
+                        <th class="py-3 px-4">Form / Grade</th>
+                        <th class="py-3 px-4">Total Students</th>
+                        <th class="py-3 px-4">Received</th>
+                        <th class="py-3 px-4">Exempted</th>
+                        <th class="py-3 px-4 w-1/3">Progress</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 text-xs">
+                    {% for grade, data in form_data.items() %}
+                        {% set expected = data.total - data.exempted %}
+                        {% set pct = (data.received / expected * 100) | round(1) if expected > 0 else 0 %}
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="py-4 px-4 font-bold text-white">{{ grade }}</td>
+                            <td class="py-4 px-4 text-slate-300">{{ data.total }}</td>
+                            <td class="py-4 px-4 text-emerald-400 font-semibold">{{ data.received }}</td>
+                            <td class="py-4 px-4 text-amber-400">{{ data.exempted }}</td>
+                            <td class="py-4 px-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-1 bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                                        <div class="bg-indigo-600 h-full rounded-full" style="width: {{ pct }}%;"></div>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-slate-300 w-10 text-right">{{ pct }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="py-8 text-center text-slate-500 italic">No grade records found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Stream Analysis Section -->
+    <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden p-6">
+        <h2 class="text-lg font-black text-white mb-4">Stream Breakdown</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase">
+                        <th class="py-3 px-4">Stream</th>
+                        <th class="py-3 px-4">Total Students</th>
+                        <th class="py-3 px-4">Received</th>
+                        <th class="py-3 px-4">Exempted</th>
+                        <th class="py-3 px-4 w-1/3">Progress</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 text-xs">
+                    {% for stream, data in stream_data.items() %}
+                        {% set expected = data.total - data.exempted %}
+                        {% set pct = (data.received / expected * 100) | round(1) if expected > 0 else 0 %}
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="py-4 px-4 font-bold text-white">{{ stream }}</td>
+                            <td class="py-4 px-4 text-slate-300">{{ data.total }}</td>
+                            <td class="py-4 px-4 text-emerald-400 font-semibold">{{ data.received }}</td>
+                            <td class="py-4 px-4 text-amber-400">{{ data.exempted }}</td>
+                            <td class="py-4 px-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-1 bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                                        <div class="bg-indigo-600 h-full rounded-full" style="width: {{ pct }}%;"></div>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-slate-300 w-10 text-right">{{ pct }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="py-8 text-center text-slate-500 italic">No stream records found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

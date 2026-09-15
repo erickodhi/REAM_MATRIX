@@ -1,0 +1,30 @@
+{% extends "super_admin/base.html" %}
+{% block title %}Edit Institution - Ream Matrix{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto space-y-6">
+    <div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl">
+        <div class="mb-6">
+            <h1 class="text-xl font-black text-white uppercase tracking-tight">Edit Institution</h1>
+            <p class="text-xs text-slate-400 mt-1">Modify registry details for {{ school.name }}</p>
+        </div>
+        
+        <form method="POST" class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">School Name</label>
+                <input type="text" name="school_name" value="{{ school.name }}" required class="w-full bg-slate-950 border border-slate-700 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+            </div>
+            
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">School Code / KNEC Code</label>
+                <input type="text" name="school_code" value="{{ school.code }}" required class="w-full bg-slate-950 border border-slate-700 text-xs text-white p-3 rounded-xl focus:outline-none focus:border-indigo-500">
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <a href="{{ url_for('super_admin.dashboard') }}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition">Cancel</a>
+                <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition shadow-lg shadow-indigo-600/20">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Dashboard - Ream Matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold tracking-wider text-indigo-400">REAM MATRIX // SUPER ADMIN</h1>
+        <div class="flex items-center space-x-4">
+            <span class="text-sm text-slate-400">Logged in as: <strong class="text-white">{{ current_user.username }}</strong></span>
+            <a href="{{ url_for('auth.logout') }}" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition">Logout</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-6 p-4 rounded-lg text-sm {% if category == 'danger' %}bg-red-900/50 border border-red-500 text-red-200{% elif category == 'success' %}bg-emerald-900/50 border border-emerald-500 text-emerald-200{% else %}bg-sky-900/50 border border-sky-500 text-sky-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <p class="text-sm text-slate-400">Total Schools</p>
+                <h3 class="text-3xl font-bold mt-1 text-white">{{ total_schools }}</h3>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <p class="text-sm text-slate-400">Active Subscriptions</p>
+                <h3 class="text-3xl font-bold mt-1 text-emerald-400">{{ active_schools }}</h3>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <p class="text-sm text-slate-400">Suspended (Non-Payment)</p>
+                <h3 class="text-3xl font-bold mt-1 text-red-400">{{ suspended_schools }}</h3>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <p class="text-sm text-slate-400">Total Platform Students</p>
+                <h3 class="text-3xl font-bold mt-1 text-indigo-400">{{ total_students }}</h3>
+            </div>
+        </div>
+
+        <!-- Actions & Schools Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-white">Registered Institutions Directory</h2>
+            <a href="{{ url_for('super_admin.add_school') }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition">
+                + Onboard New School
+            </a>
+        </div>
+
+        <!-- Schools Table -->
+        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-900/50 border-b border-slate-700 text-xs uppercase tracking-wider text-slate-400">
+                        <th class="p-4">School Name</th>
+                        <th class="p-4">Code</th>
+                        <th class="p-4">Subscription Status</th>
+                        <th class="p-4">Students Enrolled</th>
+                        <th class="p-4">Actions / Management</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700 text-sm">
+                    {% for school in schools %}
+                    <tr class="hover:bg-slate-750 transition">
+                        <td class="p-4 font-medium text-white">{{ school.name }}</td>
+                        <td class="p-4 text-slate-300 font-mono">{{ school.code }}</td>
+                        <td class="p-4">
+                            {% if school.is_active %}
+                                <span class="px-2.5 py-1 bg-emerald-900/40 border border-emerald-500/50 text-emerald-300 text-xs font-semibold rounded-full">Active</span>
+                            {% else %}
+                                <span class="px-2.5 py-1 bg-red-900/40 border border-red-500/50 text-red-300 text-xs font-semibold rounded-full">Suspended</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-slate-300">{{ school.students|length }}</td>
+                        <td class="p-4">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <!-- Status Toggle -->
+                                <a href="{{ url_for('super_admin.toggle_school', school_id=school.id) }}" class="px-2.5 py-1 rounded text-xs font-medium transition {% if school.is_active %}bg-red-600/80 hover:bg-red-600 text-white{% else %}bg-emerald-600/80 hover:bg-emerald-600 text-white{% endif %}">
+                                    {% if school.is_active %}Suspend{% else %}Activate{% endif %}
+                                </a>
+
+                                <!-- Edit Button -->
+                                <a href="{{ url_for('super_admin.edit_school', school_id=school.id) }}" class="px-2.5 py-1 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white font-medium rounded text-xs transition border border-indigo-500/30">
+                                    Edit
+                                </a>
+
+                                <!-- Delete Form -->
+                                <form action="{{ url_for('super_admin.delete_school', school_id=school.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete {{ school.name }}? This will permanently remove the school and its associated user accounts.');" class="inline">
+                                    <button type="submit" class="px-2.5 py-1 bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white font-medium rounded text-xs transition border border-rose-500/30">
+                                        Delete
+                                    </button>
+                                </form>
+
+                                <!-- Inline Reset Password Form -->
+                                <form action="{{ url_for('super_admin.reset_admin_password', school_id=school.id) }}" method="POST" class="inline-flex items-center space-x-1 pt-1 sm:pt-0">
+                                    <input type="text" name="new_password" placeholder="New Pass" required class="px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-white w-20 focus:outline-none focus:border-indigo-500">
+                                    <button type="submit" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded transition">Reset</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-6 text-center text-slate-400">No schools registered yet. Get started by onboarding one above.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

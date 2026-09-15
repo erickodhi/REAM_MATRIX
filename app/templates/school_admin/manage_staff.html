@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Directory - Ream Matrix</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 text-white font-black px-3 py-1.5 rounded-lg text-sm tracking-wider">REAM MATRIX</div>
+            <span class="text-xs text-slate-400 uppercase tracking-widest font-semibold">School Admin Portal</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="{{ url_for('school_admin.dashboard') }}" class="text-sm text-indigo-400 hover:text-indigo-300 transition">← Back to Dashboard</a>
+            <span class="text-slate-600">|</span>
+            <span class="text-sm text-slate-300">Logged in as <strong class="text-white">{{ current_user.username }}</strong></span>
+            <a href="{{ url_for('auth.logout') }}" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white text-xs font-semibold rounded-lg transition">Logout</a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for category, message in messages %}
+                        <div class="p-3 rounded-lg text-xs font-medium {% if category == 'success' %}bg-emerald-950/80 border border-emerald-800 text-emerald-300{% elif category == 'warning' %}bg-amber-950/80 border border-amber-800 text-amber-300{% else %}bg-rose-950/80 border border-rose-800 text-rose-300{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-tight">Staff Directory</h1>
+                <p class="text-xs text-slate-400 mt-1">Manage institutional staff accounts, roles, and access permissions.</p>
+            </div>
+            
+            <a href="{{ url_for('school_admin.add_staff') }}" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition shadow-lg shadow-indigo-600/20 flex items-center space-x-2">
+                <span>+ Add New Staff</span>
+            </a>
+        </div>
+
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                            <th class="py-4 px-5">Name / Username</th>
+                            <th class="py-4 px-5">Email / Contact</th>
+                            <th class="py-4 px-5">Role / Designation</th>
+                            <th class="py-4 px-5 text-center">Status</th>
+                            <th class="py-4 px-5 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 text-xs">
+                        {% for staff in staff_members %}
+                            <tr class="hover:bg-slate-800/40 transition">
+                                <td class="py-4 px-5 font-medium text-white flex items-center space-x-3">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold uppercase">
+                                        {{ staff.username[0] }}
+                                    </div>
+                                    <div>
+                                        <div class="text-white font-semibold">{{ staff.username }}</div>
+                                        <div class="text-[10px] text-slate-400 font-mono">ID: #{{ staff.id }}</div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-5 text-slate-300 font-mono">{{ staff.email or 'N/A' }}</td>
+                                <td class="py-4 px-5">
+                                    <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-300 text-[10px] font-bold uppercase rounded-md border border-indigo-500/30">
+                                        {{ staff.role }}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-5 text-center">
+                                    <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase rounded-md border border-emerald-500/40">Active</span>
+                                </td>
+                                <td class="py-4 px-5 text-center">
+                                    <div class="flex items-center justify-center space-x-2">
+                                        <a href="{{ url_for('school_admin.edit_staff', staff_id=staff.id) }}" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold rounded transition">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="py-12 text-center text-slate-500 italic">No staff members registered yet.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

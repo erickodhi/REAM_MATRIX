@@ -1,0 +1,62 @@
+{% extends "hoi/base.html" %}
+{% block title %}Executive Dashboard - Ream Matrix{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header & Year/Term Filter Form -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+        <div>
+            <h1 class="text-2xl font-black text-white tracking-tight">Institutional Overview</h1>
+            <p class="text-xs text-slate-400 mt-1">Real-time ream collection performance and metrics.</p>
+        </div>
+        
+        <form method="GET" class="flex items-center gap-3">
+            <select name="year" onchange="this.form.submit()" class="bg-slate-950 border border-slate-700 text-xs text-white px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
+                <option value="2026" {% if selected_year == '2026' %}selected{% endif %}>2026 Academic Year</option>
+                <option value="2027" {% if selected_year == '2027' %}selected{% endif %}>2027 Academic Year</option>
+            </select>
+            <select name="term" onchange="this.form.submit()" class="bg-slate-950 border border-slate-700 text-xs text-white px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
+                <option value="Term 1" {% if selected_term == 'Term 1' %}selected{% endif %}>Term 1</option>
+                <option value="Term 2" {% if selected_term == 'Term 2' %}selected{% endif %}>Term 2</option>
+                <option value="Term 3" {% if selected_term == 'Term 3' %}selected{% endif %}>Term 3</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Metrics Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+            <div class="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1">Active Students</div>
+            <div class="text-3xl font-black text-white">{{ total_students }}</div>
+        </div>
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+            <div class="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1">Expected Reams</div>
+            <div class="text-3xl font-black text-indigo-400">{{ expected_reams }}</div>
+            <div class="text-[10px] text-slate-500 mt-1">Total minus {{ total_exempted }} exempted</div>
+        </div>
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+            <div class="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1">Total Exempted</div>
+            <div class="text-3xl font-black text-amber-400">{{ total_exempted }}</div>
+        </div>
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+            <div class="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1">Total Received</div>
+            <div class="text-3xl font-black text-emerald-400">{{ total_received }}</div>
+        </div>
+    </div>
+
+    <!-- Percentage Progress Bar Card -->
+    <div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl">
+        <div class="flex justify-between items-center mb-3">
+            <span class="text-sm font-bold text-white uppercase tracking-wider">Overall Collection Progress ({{ selected_term }})</span>
+            <span class="text-lg font-black text-indigo-400">{{ collection_rate }}%</span>
+        </div>
+        <div class="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-800">
+            <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: {{ collection_rate }}%;"></div>
+        </div>
+        <div class="flex justify-between text-[11px] text-slate-500 mt-2">
+            <span>Received: {{ total_received }} reams</span>
+            <span>Target: {{ expected_reams }} reams</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
