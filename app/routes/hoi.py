@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from ..models import db, Student, SchoolSetting
+from app.models import db, Student, SchoolSetting, ExamRequisition
 
 hoi_bp = Blueprint('hoi', __name__, url_prefix='/hoi')
 
@@ -34,6 +35,28 @@ def dashboard():
     
     collection_rate = round((total_received / expected_reams * 100) if expected_reams > 0 else 0, 1)
 
+    # --- NEW: Calculate Exam Office Issued & Remaining Store Balance ---
+    requisitions = ExamRequisition.query.filter_by(school_id=school_id).all()
+    
+    total_issued_sheets = sum(
+        r.full_reams_to_issue * 500 
+        for r in requisitions 
+        if r.status != 'Rejected' and not r.is_loose_disbursement
+    )
+    total_issued_reams = total_issued_sheets / 500
+
+    # Total collected across terms (matching your exam dashboard logic)
+    submitted_students_all = Student.query.filter_by(school_id=school_id).filter(
+        (Student.term_1_status == 'Submitted') | 
+        (Student.term_2_status == 'Submitted') | 
+        (Student.term_3_status == 'Submitted')
+    ).count()
+    total_collected_sheets = submitted_students_all * 500
+
+    available_balance_sheets = total_collected_sheets - total_issued_sheets
+    available_balance_reams = available_balance_sheets / 500
+    # ------------------------------------------------------------------
+
     return render_template('hoi/dashboard.html',
                            total_students=total_students,
                            expected_reams=expected_reams,
@@ -41,7 +64,11 @@ def dashboard():
                            total_received=total_received,
                            collection_rate=collection_rate,
                            selected_term=selected_term,
-                           selected_year=selected_year)
+                           selected_year=selected_year,
+                           total_issued_reams=total_issued_reams,
+                           total_issued_sheets=total_issued_sheets,
+                           available_balance_reams=available_balance_reams,
+                           available_balance_sheets=available_balance_sheets)
 
 @hoi_bp.route('/analysis', methods=['GET'])
 @login_required

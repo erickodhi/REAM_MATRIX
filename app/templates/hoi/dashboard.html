@@ -45,7 +45,7 @@
     </div>
 
     <!-- Percentage Progress Bar Card -->
-    <div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl">
+    <div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl mb-8">
         <div class="flex justify-between items-center mb-3">
             <span class="text-sm font-bold text-white uppercase tracking-wider">Overall Collection Progress ({{ selected_term }})</span>
             <span class="text-lg font-black text-indigo-400">{{ collection_rate }}%</span>
@@ -55,7 +55,41 @@
         </div>
         <div class="flex justify-between text-[11px] text-slate-500 mt-2">
             <span>Received: {{ total_received }} reams</span>
-            <span>Target: {{ expected_reams }} reams</span>
+            <span>Target: ‏{{ expected_reams }} reams</span>
+        </div>
+    </div>
+
+    <!-- Exam Office & Store Inventory Metrics Section -->
+    <div class="mb-4">
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Exam Office & Store Status</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <!-- Issued to Exam Office -->
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex items-center justify-between">
+                <div>
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1">Issued to Exam Office</div>
+                    <div class="text-3xl font-black text-blue-400">{{ "%.1f"|format(total_issued_reams) }} Reams</div>
+                    <div class="text-[11px] text-slate-500 mt-1">({{ total_issued_sheets }} total sheets for printing)</div>
+                </div>
+                <div class="bg-blue-500/10 text-blue-400 p-4 rounded-xl border border-blue-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Remaining in Store (Available Balance) -->
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex items-center justify-between">
+                <div>
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1">Remaining in Store</div>
+                    <div class="text-3xl font-black text-emerald-400">{{ "%.1f"|format(available_balance_reams) }} Reams</div>
+                    <div class="text-[11px] text-slate-500 mt-1">({{ available_balance_sheets }} sheets in reserve balance)</div>
+                </div>
+                <div class="bg-emerald-500/10 text-emerald-400 p-4 rounded-xl border border-emerald-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" doctype="" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                </div>
+            </div>
         </div>
     </div>
 </div>

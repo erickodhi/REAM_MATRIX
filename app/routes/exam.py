@@ -1,5 +1,6 @@
 import math
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+from app.models import db, ExamRequisition, StoreCollection, Student
 from flask_login import login_required, current_user
 # Import your models (ExamRequisition, StoreCollection, db, etc.)
 from app.models import db, ExamRequisition, StoreCollection
@@ -11,23 +12,37 @@ def dashboard():
     school_id = current_user.school_id
     requisitions = ExamRequisition.query.filter_by(school_id=school_id).order_by(ExamRequisition.date_requested.desc()).all()
     
-    # 1. Calculate Total Collected into the store
-    total_collected = sum(c.sheets_added for c in StoreCollection.query.filter_by(school_id=school_id).all())
+    # 1. Calculate Total Collected based on student ream submissions (500 sheets per ream)
+    submitted_students = Student.query.filter_by(school_id=school_id).filter(
+        (Student.term_1_status == 'Submitted') | 
+        (Student.term_2_status == 'Submitted') | 
+        (Student.term_3_status == 'Submitted')
+    ).count()
     
-    # 2. Calculate Total Issued
+    total_collected = submitted_students * 500
+    
+    # 2. Calculate Total Issued (Only full reams pull from the main store inventory)
     total_issued = sum(
-        (r.full_reams_to_issue * 500) if not r.is_loose_disbursement else r.total_sheets_required 
-        for r in requisitions if r.status != 'Rejected'
+        r.full_reams_to_issue * 500 
+        for r in requisitions 
+        if r.status != 'Rejected' and not r.is_loose_disbursement
     )
     
-    # 3. Calculate current loose leftover pool from active ream requests
-    current_loose_leftovers = sum(
+    # 3. Calculate current loose leftover pool minus already disbursed loose sheets
+    total_loose_generated = sum(
         r.leftover_loose_sheets for r in requisitions 
         if r.status in ['Pending', 'Approved', 'Issued'] and not r.is_loose_disbursement
     )
     
+    total_loose_disbursed = sum(
+        r.total_sheets_required for r in requisitions 
+        if r.is_loose_disbursement and r.status != 'Rejected'
+    )
+    
+    current_loose_leftovers = total_loose_generated - total_loose_disbursed
+    
     available_balance = total_collected - total_issued
-
+    
     # Handle Full Ream Requisition Submission from Verification Modal
     if request.method == 'POST' and request.form.get('action_type') == 'ream_requisition':
         # Safety Check 1: No collection made yet
