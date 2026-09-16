@@ -12,14 +12,13 @@ def dashboard():
     school_id = current_user.school_id
     requisitions = ExamRequisition.query.filter_by(school_id=school_id).order_by(ExamRequisition.date_requested.desc()).all()
     
-    # 1. Calculate Total Collected based on student ream submissions (500 sheets per ream)
-    submitted_students = Student.query.filter_by(school_id=school_id).filter(
-        (Student.term_1_status == 'Submitted') | 
-        (Student.term_2_status == 'Submitted') | 
-        (Student.term_3_status == 'Submitted')
-    ).count()
+    # 1. Calculate Total Collected summing collections independently per term (case-insensitive)
+    t1_submitted = Student.query.filter_by(school_id=school_id).filter(db.func.lower(Student.term_1_status) == 'submitted').count()
+    t2_submitted = Student.query.filter_by(school_id=school_id).filter(db.func.lower(Student.term_2_status) == 'submitted').count()
+    t3_submitted = Student.query.filter_by(school_id=school_id).filter(db.func.lower(Student.term_3_status) == 'submitted').count()
     
-    total_collected = submitted_students * 500
+    total_collected_reams = t1_submitted + t2_submitted + t3_submitted
+    total_collected = total_collected_reams * 500
     
     # 2. Calculate Total Issued (Only full reams pull from the main store inventory)
     total_issued = sum(
