@@ -1,9 +1,9 @@
 import math
+import requests
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app.models import db, ExamRequisition, StoreCollection, Student
 from flask_login import login_required, current_user
-# Import your models (ExamRequisition, StoreCollection, db, etc.)
-from app.models import db, ExamRequisition, StoreCollection
+from app.models import db, ExamRequisition, StoreCollection, Student, SchoolSetting
+
 exam_bp = Blueprint('exam', __name__)
 
 @exam_bp.route('/dashboard', methods=['GET', 'POST'])
@@ -83,6 +83,11 @@ def dashboard():
         )
         db.session.add(new_req)
         db.session.commit()
+
+        # --- TRIGGER HOI SMS NOTIFICATION ---
+        send_hoi_sms_notification(school_id, new_req, total_issued, available_balance)
+        # ------------------------------------
+
         flash('Exam ream requisition successfully verified and approved!', 'success')
         return redirect(url_for('exam.dashboard'))
 
@@ -131,3 +136,41 @@ def disburse_loose():
     db.session.commit()
     flash(f'Successfully disbursed {sheets_requested} loose sheets from the store pool!', 'success')
     return redirect(url_for('exam.dashboard'))
+
+
+def send_hoi_sms_notification(school_id, req, total_issued_sheets, available_balance_sheets):
+    # Fetch the school setting configured by the HOI themselves
+    setting = SchoolSetting.query.filter_by(school_id=school_id).first()
+    
+    if not setting or not setting.sms_phone:
+        return  # No phone number configured by the HOI yet
+
+    total_issued_reams = total_issued_sheets / 500
+    available_balance_reams = available_balance_sheets / 500
+
+    message = (
+        f"REAM ALERT: Reams issued for {req.department_subject} "
+        f"by {req.teacher_name} ({req.purpose}). "
+        f"Issued: {req.full_reams_to_issue} Reams. "
+        f"Total Exam Office Issued: {total_issued_reams:.1f} Reams. "
+        f"Store Balance: {available_balance_reams:.1f} Reams."
+    )
+
+    # --- Replace with your actual SMS provider details ---
+    api_url = "https://api.your-sms-provider.com/send"  # e.g., Africa's Talking or Twilio URL
+    api_key = "YOUR_SMS_API_KEY"                      # Your gateway secret key
+    
+    payload = {
+        "to": setting.sms_phone,                      # Uses the number the HOI entered in Settings!
+        "message": message,
+        "from": "REAM_MATRIX"
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        requests.post(api_url, json=payload, headers=headers, timeout=5)
+    except Exception as e:
+        print(f"SMS Gateway Error: {e}")
