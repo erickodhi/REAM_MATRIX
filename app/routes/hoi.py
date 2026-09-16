@@ -35,10 +35,16 @@ def dashboard():
     
     collection_rate = round((total_received / expected_reams * 100) if expected_reams > 0 else 0, 1)
 
-    # --- FIXED: Sum up collections independently across all terms ---
-    t1_submitted = Student.query.filter_by(school_id=school_id, term_1_status='Submitted').count()
-    t2_submitted = Student.query.filter_by(school_id=school_id, term_2_status='Submitted').count()
-    t3_submitted = Student.query.filter_by(school_id=school_id, term_3_status='Submitted').count()
+    # --- FIXED: Use base_query for year filtering and case-insensitive check ---
+    base_query = Student.query.filter_by(school_id=school_id)
+    if hasattr(Student, 'year'):
+        base_query = base_query.filter_by(year=selected_year)
+    elif hasattr(Student, 'academic_year'):
+        base_query = base_query.filter_by(academic_year=selected_year)
+
+    t1_submitted = base_query.filter(db.func.lower(Student.term_1_status) == 'submitted').count()
+    t2_submitted = base_query.filter(db.func.lower(Student.term_2_status) == 'submitted').count()
+    t3_submitted = base_query.filter(db.func.lower(Student.term_3_status) == 'submitted').count()
     
     total_collected_reams = t1_submitted + t2_submitted + t3_submitted
     total_collected_sheets = total_collected_reams * 500
@@ -55,7 +61,6 @@ def dashboard():
     available_balance_sheets = total_collected_sheets - total_issued_sheets
     available_balance_reams = available_balance_sheets / 500
     # ------------------------------------------------------------------
-
     return render_template('hoi/dashboard.html',
                            total_students=total_students,
                            expected_reams=expected_reams,
