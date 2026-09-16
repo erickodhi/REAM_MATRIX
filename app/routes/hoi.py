@@ -35,23 +35,22 @@ def dashboard():
     
     collection_rate = round((total_received / expected_reams * 100) if expected_reams > 0 else 0, 1)
 
-    # --- NEW: Calculate Exam Office Issued & Remaining Store Balance ---
-    requisitions = ExamRequisition.query.filter_by(school_id=school_id).all()
+    # --- FIXED: Sum up collections independently across all terms ---
+    t1_submitted = Student.query.filter_by(school_id=school_id, term_1_status='Submitted').count()
+    t2_submitted = Student.query.filter_by(school_id=school_id, term_2_status='Submitted').count()
+    t3_submitted = Student.query.filter_by(school_id=school_id, term_3_status='Submitted').count()
     
+    total_collected_reams = t1_submitted + t2_submitted + t3_submitted
+    total_collected_sheets = total_collected_reams * 500
+
+    # Calculate Exam Office Issued Reams
+    requisitions = ExamRequisition.query.filter_by(school_id=school_id).all()
     total_issued_sheets = sum(
         r.full_reams_to_issue * 500 
         for r in requisitions 
         if r.status != 'Rejected' and not r.is_loose_disbursement
     )
     total_issued_reams = total_issued_sheets / 500
-
-    # Total collected across terms (matching your exam dashboard logic)
-    submitted_students_all = Student.query.filter_by(school_id=school_id).filter(
-        (Student.term_1_status == 'Submitted') | 
-        (Student.term_2_status == 'Submitted') | 
-        (Student.term_3_status == 'Submitted')
-    ).count()
-    total_collected_sheets = submitted_students_all * 500
 
     available_balance_sheets = total_collected_sheets - total_issued_sheets
     available_balance_reams = available_balance_sheets / 500
