@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from ..models import db, School, User, Student
+from app.models import db, School, User, ExamRequisition, Student, SchoolSetting
 
 super_admin_bp = Blueprint('super_admin', __name__, url_prefix='/super-admin')
 
