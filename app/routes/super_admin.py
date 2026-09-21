@@ -236,11 +236,17 @@ def edit_school(school_id):
 def delete_school(school_id):
     school = School.query.get_or_404(school_id)
     school_name = school.name
-    
-    User.query.filter_by(school_id=school.id).delete()
-    
+    target_school_id = school.school_id  # Assuming school.school_id holds the string identifier used in other tables
+
+    # 1. Delete all related records associated with this school first to prevent IntegrityError
+    ExamRequisition.query.filter_by(school_id=target_school_id).delete()
+    Student.query.filter_by(school_id=target_school_id).delete()
+    SchoolSetting.query.filter_by(school_id=target_school_id).delete()
+    User.query.filter_by(school_id=target_school_id).delete()
+
+    # 2. Now safely delete the school itself
     db.session.delete(school)
     db.session.commit()
     
-    flash(f'Institution "{school_name}" and its associated users have been deleted.', 'success')
+    flash(f'Institution "{school_name}" and all associated records have been deleted.', 'success')
     return redirect(url_for('super_admin.dashboard'))
