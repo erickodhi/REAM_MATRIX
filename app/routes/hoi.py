@@ -141,6 +141,9 @@ def compliance_report():
     selected_stream = request.args.get('stream', '')
     selected_status = request.args.get('status', '')
     page = request.args.get('page', 1, type=int)
+    
+    # Check if print mode is requested
+    is_print = request.args.get('print') == 'true'
 
     term_field = student_term_status_field(selected_term)
 
@@ -169,12 +172,19 @@ def compliance_report():
             'status': status_val
         })
 
-    per_page = 10
     total_items = len(filtered_students)
-    total_pages = (total_items + per_page - 1) // per_page if total_items > 0 else 1
-    start = (page - 1) * per_page
-    end = start + per_page
-    paginated_items = filtered_students[start:end]
+
+    # Bypass pagination if printing
+    if is_print:
+        paginated_items = filtered_students
+        total_pages = 1
+        start = 0
+    else:
+        per_page = 10
+        total_pages = (total_items + per_page - 1) // per_page if total_items > 0 else 1
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_items = filtered_students[start:end]
 
     # Get distinct grades
     grades_query = db.session.query(Student.form_grade).filter_by(school_id=school_id)
@@ -184,7 +194,7 @@ def compliance_report():
         grades_query = grades_query.filter_by(academic_year=selected_year)
     grades = [g[0] for g in grades_query.distinct().all() if g[0]]
 
-    # Get distinct streams (optionally filtered by selected grade if chosen)
+    # Get distinct streams
     streams_query = db.session.query(Student.stream).filter_by(school_id=school_id)
     if hasattr(Student, 'year'):
         streams_query = streams_query.filter_by(year=selected_year)
@@ -199,6 +209,7 @@ def compliance_report():
                            page=page,
                            total_pages=total_pages,
                            total_items=total_items,
+                           is_print=is_print,
                            grades=grades,
                            streams=streams,
                            selected_term=selected_term,
